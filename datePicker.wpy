@@ -1,0 +1,395 @@
+<style>
+	.date-picker-box{
+		width: 100%;
+		height: 120%;
+		position: fixed;
+		top: 0;
+		left: 0;
+		background-color: #fff;
+		z-index:24;
+	}
+	.dpb-title{
+	    height: 50px;
+	    text-align: center;
+	    line-height: 50px;
+	    background: #fff;
+	    font-size: 15px;
+		position: relative;
+
+	}
+	.dpb-title>span{
+		position: absolute;
+		right: 12px;
+		line-height: 50px;
+		font-size: 13px;
+	}
+	.dpb-week{
+		background: #fff;
+	    font-size: 13px;
+	    width: 100%;
+	    border-collapse: separate;
+	    table-layout: fixed;
+
+	}
+	.dpb-week>view{
+		height: 30px;
+	    text-align: center;
+	    font-weight: 400;
+	    border-bottom: 1px solid #e0e0e0;
+	    width: 14.28571%;
+	    vertical-align: middle;
+	    display: inline-block;
+
+	}
+	.dpb-week-days{
+		position: relative;
+	    width: 100%;
+	    height: 75%;
+	    overflow: auto;
+	    padding-bottom: 120px;
+
+	}
+	.dpbwd-table-month{
+		height: 30px;
+	    display: -webkit-box;
+	    -webkit-box-align: center;
+	    -webkit-box-pack: center;
+	    font-size: 15px;
+	    font-weight: 700;
+	    background: hsla(210,8%,95%,.9);
+	    position: -webkit-sticky;
+	    position: sticky;
+	    top: 0;
+	    z-index: 1;
+	    border-bottom: 1px solid #e0e0e0;
+	}
+	.page-table-item{
+		height:40px;
+		text-align:center;
+		font-weight:400;
+		border-bottom:1px solid #e0e0e0;
+		width:14.28571%;
+		vertical-align:middle;
+		display:inline-block;
+
+	}
+	.page-table-text{
+	    font-size: 13px;
+
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+
+	}
+	.page-table-note{
+		color: #ff5000;
+	    font-size: 12px;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	    font-style: inherit;
+	}
+	.page-table-note,.page-table-text{
+		display: block;
+	    width: 100%;
+	    text-align: center;
+	    font-weight: 400;
+	   	height: 20px;
+	    line-height:20px;
+	}
+	.page-table-item.range{
+		background: #fff6d6;
+    	border-bottom-color: #fff6d6!important;
+	}
+	.page-table-item.active{
+	    background: #ffc900;
+    	border-bottom-color: #ffc900!important;
+	}
+	.page-table-item.disable{
+		background: #f3f3f3!important;
+    	border-bottom-color: #e0e0e0!important;
+	}
+	.lmy-search-header .lmy-input-box>.icon-close {
+		position:absolute;
+		right:24rpx;
+		line-height: 68rpx;
+		top:0;
+	}
+	.lmy-search-header .lmy-filter-box {
+		
+	}
+
+</style>
+
+<template>
+	<view class="date-picker-box">
+		<view class="dpb-week">
+			<view>日</view>
+			<view>一</view>
+			<view>二</view>
+			<view>三</view>
+			<view>四</view>
+			<view>五</view>
+			<view>六</view>
+		</view>
+
+		<view class="dpb-week-days">
+		
+			<view class="dpbwd-table" wx:for="{{list}}" wx:for-index="idx" wx:for-item="month" wx:key="idx">
+				<view class="dpbwd-table-month">
+					{{filter.getMonths(idx)}}
+				</view>
+				<view class="dpbwd-table-items">
+					<view  wx:for="{{month}}" wx:for-index="idxs" wx:for-item="week" wx:key="idxs">
+						
+							<view wx:for="{{week}}"  wx:for-index="index" wx:for-item="day" wx:key="index"  @tap="select({{day}})" 
+								class="{{filter.isActive(begin,end,day)?'active page-table-item ':(filter.isInRange(begin,end,day)?'range page-table-item ':filter.isDisable(start,lastDate,day)?'disable page-table-item ':'page-table-item ')}}" >
+								<label class="page-table-note"  >
+									{{
+										filter.isBegin(begin,day)?beginText:(filter.isEnd(end,day)?endText:'')
+									}}
+								</label>
+								<label class="page-table-text">
+									{{day.day}}
+								</label>
+							</view>
+					</view>
+				</view>
+			</view>
+		</view>
+	</view>	
+</template>
+<script>
+  	import wepy from 'wepy'
+  	import wxs from  '../../wxs/datePicker/datePicker.wxs';
+  	export default class DatePicker extends wepy.component {
+  	    data = {
+    		list:[],
+			year:(new Date()).getFullYear(),
+			month:(new Date()).getMonth()+1,
+			begin:'',
+			end:'',
+			lastDate:'',
+    	}
+    	wxs = {
+	       filter: wxs
+	    }
+    	props = {
+			monthLength:{
+				type:Number,
+				default:6
+			},
+			beginText:{
+				type:String,
+				default:'入住'
+			},
+			endText:{
+				type:String,
+				default:'离店'
+			},
+			start:{
+				type:String,
+				default:''
+			},
+			last:{
+				type:String,
+				default:''
+			},
+			beginDate:{
+				type:String,
+				default:''
+			},
+			endDate:{
+				type:String,
+				default:''
+			},
+	    }
+	    watch = {
+	    	beginDate (curVal, oldVal) {
+	    	
+				this.begin=curVal;
+				this.tableDate();
+	      	},
+	    	endDate (curVal, oldVal) {
+      			this.end=curVal;
+				this.tableDate();
+	      	}
+			
+	    }
+		methods={
+			//选中日期
+			select(day){
+				var day=day.year+'-'+day.month+'-'+day.day
+
+				if(this.isDisable(day))return;
+
+				if(!this.begin||(this.begin&&this.end)){
+					this.begin=day;
+					this.end='';
+				}else if(this.begin&&!this.end){
+					//反选日期
+					if(this.isOpposite(day,this.begin)){
+						this.end=this.begin;
+						this.begin=day;
+
+					}else{
+						this.end=day;
+					}
+					 // this.$emit('childFn', 100)
+					//选中日期
+					this.$emit('select',this.begin,this.end)
+				}
+
+			}
+
+		}
+
+		
+		//是否为不可选择日期
+		isDisable(day){
+			var start=this.start;
+			var lastDate=this.lastDate;
+
+			var s1 = (new Date(start)).getTime();
+			var s2 = (new Date(lastDate)).getTime();
+        	var s = (new Date(day)).getTime();
+
+        	return (s1>s||s2<s)?true:false;
+
+		}
+		//是否选中
+		isActive(day){
+			var begin=this.begin;
+			var end=this.end;
+			var s1 = (new Date(begin)).getTime();
+			var s2 = (new Date(end)).getTime();
+        	var s = (new Date(day)).getTime();
+        	return (s==s1||s==s2)?true:false
+
+		}
+		//是否为开始日期
+		isBegin(day){
+			var begin=this.begin;
+			var end=this.end;
+			var s1 = (new Date(begin)).getTime();
+        	var s = (new Date(day)).getTime();
+        	return s==s1?true:false
+
+		}
+		//是否为结束日期
+		isEnd(day){
+			var begin=this.begin;
+			var end=this.end;
+			var s1 = (new Date(end)).getTime();
+        	var s = (new Date(day)).getTime();
+        	return s==s1?true:false
+
+		}
+
+		cancel(){
+			this.begin=this.beginDate;
+			this.end=this.endDate;
+
+			this.$emit('select')
+		}
+		//判断是否反转日期
+		isOpposite(end,begin){
+			var s1 = (new Date(begin)).getTime();
+        	var s2 = (new Date(end)).getTime();
+
+        	return s2<s1?true:false;
+		}
+		//查看是否是已经选中的日期区间中
+		isInRange(day){
+			if(!day)return;
+			var begin=this.begin;
+			var end=this.end;
+			var s1 = (new Date(begin)).getTime();
+        	var s2 = (new Date(end)).getTime();
+        	var s = (new Date(day)).getTime();
+        	if((s<s2)&&(s>s1))return true;
+
+		}
+
+		//获取天数差
+		getDaysSize(s1, s2){
+			var s1 = new Date(s1);
+	        var s2 = new Date(s2);
+
+	        var days = s2.getTime() - s1.getTime();
+	        var time = parseInt(days / (1000 * 60 * 60 * 24));
+	        return time;
+		}
+		//获取周几
+		getWeekday(date){
+	        var nowDate=new Date();
+	        var days=this.getDaysSize(nowDate,date);
+	        var mydate=new Date(date);
+	        var myday=mydate.getDay()//注:0-6对应为星期日到星期六
+	        return myday;
+		}
+
+		//将数据格式化表格日期格式
+	    monthDate(year,month){
+
+	        //或取当前月份最后一天的日期
+	        var day = new Date(year,month,0);
+	        var lastDay=day.getDate();
+	        //计算当前月份第一天是星期几
+	        var weekday=this.getWeekday(year+'-'+month+'-01');
+	        //定义存放当前月份的数组
+	        var list=[];
+	        //定义日期表格数组
+	        var result = [];
+	        //计算出当前月份每一天到数组中
+	        for(var day=1;day<=lastDay;day++){
+	        	var day=day<10?'0'+day:day;
+
+				list.push({day,month,year });
+	        }
+
+	        //补全日期前几天
+	        for(var i=0;i<weekday;i++){
+	             list.unshift('');
+	        }
+	        //切成6行
+	        for(var i=0,len=list.length;i<len;i+=7){
+	           result.push(list.slice(i,i+7));
+	        }
+	        //补全日期后几天
+	        var length=result[(result.length-1)].length;
+	        if(length<7){
+	            for(var i=0;i<(7-length);i++){
+	                result[(result.length-1)].push('');
+	            }
+	        }
+	        return result;
+	    }
+	    //初始化表格数据
+	    tableDate(){
+	    	var monthLength=this.monthLength;
+	    	var list=[];
+			// var date = new Date();
+			var year=this.year; //获取完整的年份(4位)
+			var month=this.month; //获取当前月份
+
+	    	for(var i=0;i<monthLength;i++){
+	    		var y=(month+i)>12?year+1:year;
+	    		var m=(month+i)>12?(month+i-12):(month+i);
+	    		
+	    		var re=this.monthDate(y,m<10?'0'+m:m);
+	    		list.push(re);
+	    	}
+	    	this.list=list;
+	    	this.$apply();
+	    }
+	    onLoad () {
+	    	this.end=this.endDate;
+			this.begin=this.beginDate;
+			this.lastDate=this.last;
+
+			this.tableDate();
+	    }
+		
+  }
+</script>
